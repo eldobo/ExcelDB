@@ -22,6 +22,20 @@ export function createTable<T>(
 
   const keyColumn = findKeyColumn();
 
+  /** Validate that required fields are present and non-null. */
+  function validateRequired(rowObj: Record<string, unknown>, isPartial: boolean): void {
+    for (const [colName, def] of Object.entries(schema.columns)) {
+      if (!def.required) continue;
+      if (isPartial && !(colName in rowObj)) continue; // partial update — skip fields not in patch
+      const val = rowObj[colName];
+      if (val === null || val === undefined) {
+        throw new ExcelDBValidationError(
+          `Required field "${colName}" is missing or null in table "${sheetName}"`,
+        );
+      }
+    }
+  }
+
   /** Read all rows from the sheet, coercing declared columns and collecting extras. */
   function readRows(includeDeleted: boolean): T[] {
     const wb = getWorkbook();
@@ -141,6 +155,7 @@ export function createTable<T>(
 
     async append(row: Omit<T, '_extra'>): Promise<T> {
       const rowObj = row as Record<string, unknown>;
+      validateRequired(rowObj, false);
 
       // Check for duplicate key
       if (keyColumn && keyColumn in rowObj) {
@@ -170,6 +185,7 @@ export function createTable<T>(
 
     async upsert(row: Omit<T, '_extra'>): Promise<T> {
       const rowObj = row as Record<string, unknown>;
+      validateRequired(rowObj, false);
 
       if (keyColumn && keyColumn in rowObj) {
         const wb = getWorkbook();
@@ -231,6 +247,7 @@ export function createTable<T>(
 
         // Apply patch
         const patchObj = patch as Record<string, unknown>;
+        validateRequired(patchObj, true);
         for (const [colName, val] of Object.entries(patchObj)) {
           const colIdx = headers.indexOf(colName);
           const def = schema.columns[colName];

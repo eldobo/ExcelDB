@@ -206,6 +206,51 @@ describe('table.delete', () => {
   });
 });
 
+describe('required field validation', () => {
+  it('append rejects null for required fields', async () => {
+    await expect(table.append({
+      id: 's4',
+      date: null as unknown as string,  // required field
+      region: 'GI',
+      severity: null,
+      description: null,
+    })).rejects.toThrow('Required field "date"');
+  });
+
+  it('append rejects undefined for required fields', async () => {
+    await expect(table.append({
+      id: 's4',
+      region: 'GI',
+      severity: null,
+      description: null,
+    } as unknown as SymptomRow)).rejects.toThrow('Required field "date"');
+  });
+
+  it('append allows null for optional fields', async () => {
+    await table.append({
+      id: 's4',
+      date: '2026-03-15',
+      region: 'GI',
+      severity: null,
+      description: null,
+    });
+    const row = await table.get('s4');
+    expect(row).not.toBeNull();
+  });
+
+  it('update rejects setting required field to null', async () => {
+    await expect(
+      table.update('s1', { region: null } as unknown as Partial<SymptomRow>),
+    ).rejects.toThrow('Required field "region"');
+  });
+
+  it('update allows setting optional field to null', async () => {
+    await table.update('s1', { severity: null });
+    const row = await table.get('s1');
+    expect(row!.severity).toBeNull();
+  });
+});
+
 describe('_extra field', () => {
   it('includes extra columns in _extra', async () => {
     // Add an extra column to the sheet that's not in the schema

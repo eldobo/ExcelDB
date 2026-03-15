@@ -214,6 +214,7 @@ const created = await symptoms.append({
 | `row` | Row type (without `_extra`) | The row data to insert |
 
 Behavior:
+- Validates required fields (throws `ExcelDBValidationError` if missing or null)
 - Coerces values to cell-appropriate types
 - If the table has a key column, checks for uniqueness (throws `ExcelDBValidationError` if duplicate)
 - Appends the row as a new Excel row after the last existing row
@@ -241,7 +242,7 @@ Requires a key column. Throws `ExcelDBError` if no key column is defined.
 Behavior:
 - Finds existing row by key value
 - If found: updates all fields with the new values (preserves `_extra` columns)
-- If not found: appends as a new row
+- If not found: appends as a new row (validates required fields)
 - Uploads the modified file
 
 Returns: `T` — the upserted row.
@@ -265,6 +266,7 @@ await symptoms.update('abc-123', {
 Behavior:
 - Finds the row by key (throws `ExcelDBNotFoundError` if not found)
 - Merges patch into existing row (only specified fields change)
+- Validates that required fields are not set to `null` (throws `ExcelDBValidationError`)
 - Preserves `_extra` columns
 - Uploads the modified file
 
