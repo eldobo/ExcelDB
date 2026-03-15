@@ -184,7 +184,7 @@ const auth = createAuth({
   clientId: 'your-azure-app-client-id',
   // authority defaults to 'https://login.microsoftonline.com/consumers'
   // redirectUri defaults to window.location.origin
-  // scopes defaults to ['Files.ReadWrite']
+  // scopes defaults to ['Files.ReadWrite', 'User.Read']
 });
 
 const db = await connect({ auth, fileName: 'journal.xlsx', schema });

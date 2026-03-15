@@ -29,7 +29,7 @@ ExcelDB uses the Authorization Code Flow with PKCE (Proof Key for Code Exchange)
 - Authority: `https://login.microsoftonline.com/consumers` (personal accounts only)
 - Response type: `code` (authorization code)
 - PKCE: Enabled automatically by MSAL.js
-- Token storage: Browser `sessionStorage` by default (configurable to `localStorage`)
+- Token storage: Browser `localStorage`
 
 ### Required scopes
 
@@ -135,8 +135,8 @@ Returns the DriveItem metadata. Used to refresh the eTag without downloading the
 | `404` | Not found | `ExcelDBNotFoundError` (or create file, depending on context) |
 | `409` | Conflict | `ExcelDBConflictError` |
 | `412` | Precondition failed | `ExcelDBConflictError` (eTag mismatch) |
-| `429` | Too many requests | Wait `Retry-After` seconds, then retry. Max 3 retries → `ExcelDBError` |
-| `500+` | Server error | Retry once after 1 second. If still failing → `ExcelDBError` |
+| `429` | Too many requests | Wait `Retry-After` seconds, then retry once → `ExcelDBError` |
+| `500+` | Server error | `ExcelDBError` (no automatic retry) |
 
 ### Throttle handling (429)
 
@@ -144,7 +144,7 @@ Microsoft Graph enforces rate limits:
 - Excel-specific: 5,000 requests per 10 seconds per app
 - Global: 130,000 requests per 10 seconds per app
 
-When throttled, the response includes a `Retry-After` header (value in seconds). ExcelDB waits the specified time before retrying. Maximum 3 retry attempts.
+When throttled, the response includes a `Retry-After` header (value in seconds). ExcelDB waits the specified time (defaulting to 1 second if absent) before retrying once.
 
 For typical ExcelDB usage (a few operations per user interaction), throttling is extremely unlikely. The library makes at most 2-3 Graph API calls per user action (metadata + download + upload).
 

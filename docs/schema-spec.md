@@ -160,7 +160,7 @@ When `connect()` is called, ExcelDB validates the live workbook against the decl
 
 2. **Column existence:** Each declared column must have a matching header in row 1 of the corresponding sheet. Missing column → `ExcelDBSchemaError` with the column name and sheet name.
 
-3. **Key column uniqueness:** If a table has a key column, all values in that column must be unique (excluding soft-deleted rows). Duplicate keys → `ExcelDBSchemaError`.
+3. **Key column uniqueness:** Not checked at connect time. Key uniqueness is enforced at write time — `append()` throws `ExcelDBValidationError` if a duplicate key is detected.
 
 4. **Extra sheets:** Sheets not declared in the schema (other than `_exceldb_meta`) are ignored. They are not deleted or modified.
 

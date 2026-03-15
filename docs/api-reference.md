@@ -11,7 +11,7 @@ const auth = createAuth({
   clientId: 'your-azure-app-client-id',
   authority: 'https://login.microsoftonline.com/consumers',  // default
   redirectUri: window.location.origin,                        // default
-  scopes: ['Files.ReadWrite'],                                // default
+  scopes: ['Files.ReadWrite', 'User.Read'],                    // default
 });
 ```
 
@@ -22,7 +22,7 @@ const auth = createAuth({
 | `clientId` | `string` | Yes | — | Azure app registration client ID |
 | `authority` | `string` | No | `https://login.microsoftonline.com/consumers` | MSAL authority URL |
 | `redirectUri` | `string` | No | `window.location.origin` | OAuth redirect URI |
-| `scopes` | `string[]` | No | `['Files.ReadWrite']` | Microsoft Graph permission scopes |
+| `scopes` | `string[]` | No | `['Files.ReadWrite', 'User.Read']` | Microsoft Graph permission scopes |
 
 ### Returns: `AuthProvider`
 
@@ -153,7 +153,7 @@ const row = await symptoms.get('abc-123');
 // row is T | null
 ```
 
-Requires the table to have a column with `key: true` in the schema. Throws `ExcelDBError` if no key column is defined.
+Requires the table to have a column with `key: true` in the schema. Returns `null` if no key column is defined.
 
 Returns: `T | null` — the matching row, or `null` if not found (or soft-deleted).
 
@@ -214,7 +214,6 @@ const created = await symptoms.append({
 | `row` | Row type (without `_extra`) | The row data to insert |
 
 Behavior:
-- Validates required fields (throws `ExcelDBValidationError` if missing)
 - Coerces values to cell-appropriate types
 - If the table has a key column, checks for uniqueness (throws `ExcelDBValidationError` if duplicate)
 - Appends the row as a new Excel row after the last existing row
@@ -243,7 +242,6 @@ Behavior:
 - Finds existing row by key value
 - If found: updates all fields with the new values (preserves `_extra` columns)
 - If not found: appends as a new row
-- Validates required fields
 - Uploads the modified file
 
 Returns: `T` — the upserted row.
@@ -267,7 +265,6 @@ await symptoms.update('abc-123', {
 Behavior:
 - Finds the row by key (throws `ExcelDBNotFoundError` if not found)
 - Merges patch into existing row (only specified fields change)
-- Validates that required fields are not set to `null`
 - Preserves `_extra` columns
 - Uploads the modified file
 
