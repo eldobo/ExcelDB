@@ -164,4 +164,15 @@ describe('WorkbookHandle.toBytes round-trip', () => {
     expect(rows).toHaveLength(2);
     expect(rows[0]).toEqual(['1', 'Alice']);
   });
+
+  it('toBytes returns a Uint8Array whose buffer is exactly sized', () => {
+    const wb = createEmptyWorkbook();
+    wb.addSheet('test', ['a'], [['1']]);
+    const bytes = wb.toBytes();
+
+    // bytes.buffer must be exactly bytes.byteLength — no oversized underlying buffer.
+    // If this fails, code using bytes.buffer (e.g. for upload) would send junk trailing bytes.
+    expect(bytes.byteOffset).toBe(0);
+    expect(bytes.buffer.byteLength).toBe(bytes.byteLength);
+  });
 });

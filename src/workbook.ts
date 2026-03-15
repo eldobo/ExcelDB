@@ -82,7 +82,9 @@ function createHandle(wb: XLSX.WorkBook): WorkbookHandle {
     },
 
     toBytes(): Uint8Array {
-      return XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array;
+      // XLSX.write with type:'array' returns ArrayBuffer, not Uint8Array.
+      // Wrap it so callers get a real Uint8Array with a correctly-sized .buffer.
+      return new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer);
     },
   };
 }

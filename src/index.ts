@@ -61,7 +61,7 @@ export async function connect<S extends SchemaDefinition>(
     // Initialize a new workbook from the schema
     workbook = initializeWorkbook(options.schema, appName);
     const bytes = workbook.toBytes();
-    const created = await createFile(client, folderPath, options.fileName, bytes.slice().buffer as ArrayBuffer);
+    const created = await createFile(client, folderPath, options.fileName, bytes.buffer as ArrayBuffer);
     fileId = created.id;
     eTag = created.eTag;
   }
@@ -77,7 +77,7 @@ export async function connect<S extends SchemaDefinition>(
   // Flush: serialize + upload with eTag
   async function flush(): Promise<void> {
     const bytes = workbook.toBytes();
-    const result = await uploadFile(client, fileId, bytes.slice().buffer as ArrayBuffer, eTag);
+    const result = await uploadFile(client, fileId, bytes.buffer as ArrayBuffer, eTag);
     eTag = result.eTag;
   }
 
