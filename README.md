@@ -54,6 +54,7 @@ const all = await tasks.getAll();
 
 ## Documentation
 
+- [Jobs to Be Done](./docs/JTBD.md) — what ExcelDB enables and when to use it
 - [Architecture](./docs/architecture.md) — system design, data flow, trade-offs
 - [API Reference](./docs/api-reference.md) — full public API with examples
 - [Schema Specification](./docs/schema-spec.md) — schema format, types, validation, migrations
