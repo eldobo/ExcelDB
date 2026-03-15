@@ -1,0 +1,44 @@
+{
+  "name": "exceldb",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/exceldb.cjs",
+  "module": "./dist/exceldb.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/exceldb.js",
+      "require": "./dist/exceldb.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --project tsconfig.build.json --emitDeclarationOnly",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "peerDependencies": {
+    "@azure/msal-browser": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@azure/msal-browser": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@azure/msal-browser": "^4.0.0",
+    "@types/node": "^25.5.0",
+    "msw": "^2.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.0.0",
+    "vitest": "^3.0.0"
+  }
+}
