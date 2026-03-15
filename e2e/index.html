@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExcelDB — End-to-End Test</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
+    h1 { font-size: 1.4rem; margin-bottom: 8px; }
+    p.subtitle { color: #666; margin-bottom: 24px; font-size: 0.9rem; }
+    .config { display: flex; gap: 8px; margin-bottom: 16px; align-items: end; }
+    .config label { font-size: 0.8rem; color: #666; display: block; margin-bottom: 4px; }
+    .config input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; width: 320px; }
+    button { padding: 8px 16px; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 500; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #0078d4; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #106ebe; }
+    .btn-danger { background: #d42020; color: white; }
+    .btn-danger:hover:not(:disabled) { background: #b01a1a; }
+    .btn-secondary { background: #e8e8e8; color: #333; }
+    .btn-secondary:hover:not(:disabled) { background: #ddd; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    #log { background: #f5f5f5; border-radius: 8px; padding: 16px; font-family: 'SF Mono', Menlo, monospace; font-size: 0.8rem; line-height: 1.6; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+    .log-ok { color: #107c10; }
+    .log-err { color: #d42020; }
+    .log-info { color: #0078d4; }
+    hr { border: none; border-top: 1px solid #eee; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <h1>ExcelDB — End-to-End Test</h1>
+  <p class="subtitle">Auth → Create file → CRUD → Verify → Disconnect</p>
+
+  <div class="config">
+    <div>
+      <label for="clientId">Azure Client ID</label>
+      <input id="clientId" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btnRun" class="btn-primary" onclick="runTest()">Run Full Test</button>
+    <button id="btnClear" class="btn-secondary" onclick="clearLog()">Clear Log</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script type="module">
+    import { createAuth, connect } from '../src/index.ts';
+
+    const logEl = document.getElementById('log');
+    const btnRun = document.getElementById('btnRun');
+
+    function log(msg, cls = '') {
+      const line = document.createElement('span');
+      line.className = cls;
+      line.textContent = msg + '\n';
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    window.clearLog = () => { logEl.innerHTML = ''; };
+
+    window.runTest = async () => {
+      const clientId = document.getElementById('clientId').value.trim();
+      if (!clientId) { log('Enter your Azure Client ID first.', 'log-err'); return; }
+
+      btnRun.disabled = true;
+      logEl.innerHTML = '';
+
+      const schema = {
+        version: 1,
+        tables: {
+          tasks: {
+            columns: {
+              id:    { type: 'string', key: true, required: true },
+              title: { type: 'string', required: true },
+              done:  { type: 'boolean' },
+            },
+          },
+        },
+      };
+
+      try {
+        // Step 1: Auth
+        log('1. Creating auth provider...', 'log-info');
+        const auth = createAuth({ clientId });
+
+        log('2. Connecting (will trigger OAuth popup if not signed in)...', 'log-info');
+        const db = await connect({ auth, fileName: 'exceldb-e2e-test.xlsx', schema });
+        log('   Connected!', 'log-ok');
+
+        // Step 2: Append
+        log('3. Appending 3 rows...', 'log-info');
+        const tasks = db.table('tasks');
+        await tasks.append({ id: 't1', title: 'Buy groceries', done: false });
+        await tasks.append({ id: 't2', title: 'Write tests', done: true });
+        await tasks.append({ id: 't3', title: 'Ship v1', done: false });
+        log('   Appended 3 rows.', 'log-ok');
+
+        // Step 3: Read back
+        log('4. Reading all rows...', 'log-info');
+        const all = await tasks.getAll();
+        log(`   Got ${all.length} rows:`, 'log-ok');
+        for (const r of all) {
+          log(`     ${r.id}: "${r.title}" (done=${r.done})`);
+        }
+
+        // Step 4: Update
+        log('5. Updating t1 (done → true)...', 'log-info');
+        await tasks.update('t1', { done: true });
+        const updated = await tasks.get('t1');
+        log(`   t1 done = ${updated?.done}`, 'log-ok');
+
+        // Step 5: Upsert
+        log('6. Upserting t4 (new) and t2 (existing)...', 'log-info');
+        await tasks.upsert({ id: 't4', title: 'New task', done: false });
+        await tasks.upsert({ id: 't2', title: 'Write MORE tests', done: true });
+        const t4 = await tasks.get('t4');
+        const t2 = await tasks.get('t2');
+        log(`   t4: "${t4?.title}"`, 'log-ok');
+        log(`   t2: "${t2?.title}" (was "Write tests")`, 'log-ok');
+
+        // Step 6: Soft delete
+        log('7. Soft-deleting t3...', 'log-info');
+        await tasks.delete('t3');
+        const afterSoftDel = await tasks.getAll();
+        log(`   Rows after soft delete: ${afterSoftDel.length} (should be 3)`, 'log-ok');
+        const withDeleted = await tasks.getAll({ includeDeleted: true });
+        log(`   Rows including deleted: ${withDeleted.length} (should be 4)`, 'log-ok');
+
+        // Step 7: Hard delete
+        log('8. Hard-deleting t3...', 'log-info');
+        await tasks.delete('t3', { hard: true });
+        const afterHardDel = await tasks.getAll({ includeDeleted: true });
+        log(`   Rows after hard delete: ${afterHardDel.length} (should be 3)`, 'log-ok');
+
+        // Step 8: Count
+        log('9. Counting...', 'log-info');
+        const total = await tasks.count();
+        const doneCount = await tasks.count({ done: true });
+        log(`   Total: ${total}, Done: ${doneCount}`, 'log-ok');
+
+        // Step 9: Query
+        log('10. Querying done=false...', 'log-info');
+        const notDone = await tasks.query({ done: false });
+        log(`   Not done: ${notDone.map(r => r.id).join(', ')}`, 'log-ok');
+
+        // Step 10: Disconnect
+        log('11. Disconnecting...', 'log-info');
+        db.disconnect();
+        log('   Disconnected.', 'log-ok');
+
+        log('');
+        log('ALL TESTS PASSED', 'log-ok');
+        log('Check your OneDrive for "exceldb-e2e-test.xlsx"');
+
+      } catch (err) {
+        log(`ERROR: ${err.message}`, 'log-err');
+        if (err.stack) log(err.stack, 'log-err');
+      } finally {
+        btnRun.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
