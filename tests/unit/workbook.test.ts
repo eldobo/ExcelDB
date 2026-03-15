@@ -158,7 +158,7 @@ describe('WorkbookHandle.toBytes round-trip', () => {
     wb.addSheet('test', ['id', 'name'], [['1', 'Alice'], ['2', 'Bob']]);
     const bytes = wb.toBytes();
 
-    const wb2 = parseWorkbook(bytes.buffer as ArrayBuffer);
+    const wb2 = parseWorkbook(bytes);
     const { headers, rows } = wb2.readSheet('test');
     expect(headers).toEqual(['id', 'name']);
     expect(rows).toHaveLength(2);
