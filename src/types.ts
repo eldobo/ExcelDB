@@ -52,6 +52,7 @@ export interface ConnectOptions<S extends SchemaDefinition> {
   schema: S;
   folderPath?: string;
   appName?: string;
+  migrations?: Migration[];
 }
 
 // ---- Migration ----

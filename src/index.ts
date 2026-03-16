@@ -54,20 +54,44 @@ export async function connect<S extends SchemaDefinition>(
 
   if (existing) {
     fileId = existing.id;
+    console.log('[ExcelDB] Found existing file:', { id: fileId, name: options.fileName });
     const downloaded = await downloadFile(client, fileId);
     eTag = downloaded.eTag;
+    console.log('[ExcelDB] Downloaded file:', { bytes: downloaded.data.byteLength, eTag });
     workbook = parseWorkbook(downloaded.data);
+    console.log('[ExcelDB] Parsed workbook sheets:', workbook.getSheetNames());
+
+    // Apply pending migrations before schema validation
+    if (options.migrations?.length) {
+      const currentVersion = readSchemaVersion(workbook);
+      console.log('[ExcelDB] Schema version:', currentVersion, '→ checking', options.migrations.length, 'migration(s)');
+      const newVersion = applyMigrations(workbook, options.migrations, currentVersion);
+      if (newVersion > currentVersion) {
+        console.log('[ExcelDB] Migrated to v' + newVersion + ', sheets after migration:', workbook.getSheetNames());
+        const bytes = workbook.toBytes();
+        console.log('[ExcelDB] Serialized migrated workbook:', bytes.byteLength, 'bytes');
+        const result = await uploadFile(client, fileId, bytes.buffer as ArrayBuffer, eTag);
+        eTag = result.eTag;
+        console.log('[ExcelDB] Uploaded migrated file, new eTag:', eTag);
+      } else {
+        console.log('[ExcelDB] No migrations needed (already at v' + currentVersion + ')');
+      }
+    }
   } else {
+    console.log('[ExcelDB] File not found, creating new:', options.fileName);
     // Initialize a new workbook from the schema
     workbook = initializeWorkbook(options.schema, appName);
     const bytes = workbook.toBytes();
+    console.log('[ExcelDB] Initialized new workbook:', workbook.getSheetNames(), bytes.byteLength, 'bytes');
     const created = await createFile(client, folderPath, options.fileName, bytes.buffer as ArrayBuffer);
     fileId = created.id;
     eTag = created.eTag;
+    console.log('[ExcelDB] Created file:', { id: fileId, eTag });
   }
 
   // Validate schema
   const validation = validateSchema(workbook, options.schema);
+  console.log('[ExcelDB] Schema validation:', validation.valid ? 'PASSED' : 'FAILED — ' + validation.errors.join('; '));
   if (!validation.valid) {
     throw new ExcelDBSchemaError(
       `Schema validation failed: ${validation.errors.join('; ')}`,
