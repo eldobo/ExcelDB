@@ -20,7 +20,7 @@
     "build": "vite build && tsc --project tsconfig.build.json --emitDeclarationOnly",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "vite --config e2e/vite.config.ts"
+    "e2e": "vite --config tests/e2e/vite.config.ts"
   },
   "dependencies": {
     "xlsx": "^0.18.5"
