@@ -91,12 +91,18 @@
         const db = await connect({ auth, fileName: 'exceldb-e2e-test.xlsx', schema });
         log('   Connected!', 'log-ok');
 
+        // Generate unique IDs so the test is re-runnable
+        const id1 = crypto.randomUUID().slice(0, 8);
+        const id2 = crypto.randomUUID().slice(0, 8);
+        const id3 = crypto.randomUUID().slice(0, 8);
+        const id4 = crypto.randomUUID().slice(0, 8);
+
         // Step 2: Append
         log('3. Appending 3 rows...', 'log-info');
         const tasks = db.table('tasks');
-        await tasks.append({ id: 't1', title: 'Buy groceries', done: false });
-        await tasks.append({ id: 't2', title: 'Write tests', done: true });
-        await tasks.append({ id: 't3', title: 'Ship v1', done: false });
+        await tasks.append({ id: id1, title: 'Buy groceries', done: false });
+        await tasks.append({ id: id2, title: 'Write tests', done: true });
+        await tasks.append({ id: id3, title: 'Ship v1', done: false });
         log('   Appended 3 rows.', 'log-ok');
 
         // Step 3: Read back
@@ -108,33 +114,33 @@
         }
 
         // Step 4: Update
-        log('5. Updating t1 (done → true)...', 'log-info');
-        await tasks.update('t1', { done: true });
-        const updated = await tasks.get('t1');
-        log(`   t1 done = ${updated?.done}`, 'log-ok');
+        log(`5. Updating ${id1} (done → true)...`, 'log-info');
+        await tasks.update(id1, { done: true });
+        const updated = await tasks.get(id1);
+        log(`   ${id1} done = ${updated?.done}`, 'log-ok');
 
         // Step 5: Upsert
-        log('6. Upserting t4 (new) and t2 (existing)...', 'log-info');
-        await tasks.upsert({ id: 't4', title: 'New task', done: false });
-        await tasks.upsert({ id: 't2', title: 'Write MORE tests', done: true });
-        const t4 = await tasks.get('t4');
-        const t2 = await tasks.get('t2');
-        log(`   t4: "${t4?.title}"`, 'log-ok');
-        log(`   t2: "${t2?.title}" (was "Write tests")`, 'log-ok');
+        log(`6. Upserting ${id4} (new) and ${id2} (existing)...`, 'log-info');
+        await tasks.upsert({ id: id4, title: 'New task', done: false });
+        await tasks.upsert({ id: id2, title: 'Write MORE tests', done: true });
+        const t4 = await tasks.get(id4);
+        const t2 = await tasks.get(id2);
+        log(`   ${id4}: "${t4?.title}"`, 'log-ok');
+        log(`   ${id2}: "${t2?.title}" (was "Write tests")`, 'log-ok');
 
         // Step 6: Soft delete
-        log('7. Soft-deleting t3...', 'log-info');
-        await tasks.delete('t3');
+        log(`7. Soft-deleting ${id3}...`, 'log-info');
+        await tasks.delete(id3);
         const afterSoftDel = await tasks.getAll();
-        log(`   Rows after soft delete: ${afterSoftDel.length} (should be 3)`, 'log-ok');
         const withDeleted = await tasks.getAll({ includeDeleted: true });
-        log(`   Rows including deleted: ${withDeleted.length} (should be 4)`, 'log-ok');
+        log(`   Rows after soft delete: ${afterSoftDel.length} (was ${all.length}, minus 1)`, 'log-ok');
+        log(`   Rows including deleted: ${withDeleted.length}`, 'log-ok');
 
         // Step 7: Hard delete
-        log('8. Hard-deleting t3...', 'log-info');
-        await tasks.delete('t3', { hard: true });
+        log(`8. Hard-deleting ${id3}...`, 'log-info');
+        await tasks.delete(id3, { hard: true });
         const afterHardDel = await tasks.getAll({ includeDeleted: true });
-        log(`   Rows after hard delete: ${afterHardDel.length} (should be 3)`, 'log-ok');
+        log(`   Rows after hard delete: ${afterHardDel.length} (was ${withDeleted.length}, minus 1)`, 'log-ok');
 
         // Step 8: Count
         log('9. Counting...', 'log-info');
