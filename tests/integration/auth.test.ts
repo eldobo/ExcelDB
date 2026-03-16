@@ -22,6 +22,17 @@ describe('createAuth', () => {
     expect(auth.isAuthenticated).toBeTypeOf('function');
   });
 
+  it('returns an AuthProvider with isAuthenticatedAsync', () => {
+    const auth = createAuth({ clientId: 'test-client-id' });
+    expect(auth.isAuthenticatedAsync).toBeTypeOf('function');
+  });
+
+  it('isAuthenticated returns false before MSAL init', () => {
+    const auth = createAuth({ clientId: 'test-client-id' });
+    // Synchronous check should return false since MSAL hasn't been lazily initialized
+    expect(auth.isAuthenticated!()).toBe(false);
+  });
+
   it('defaults authority to consumers endpoint', () => {
     const auth = createAuth({ clientId: 'test-client-id' });
     // The auth object should be configured for personal accounts

@@ -42,6 +42,7 @@ export interface AuthProvider {
   login?(): Promise<void>;
   logout?(): Promise<void>;
   isAuthenticated?(): boolean;
+  isAuthenticatedAsync?(): Promise<boolean>;
 }
 
 // ---- Connect options ----

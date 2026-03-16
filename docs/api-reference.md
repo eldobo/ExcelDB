@@ -32,13 +32,15 @@ interface AuthProvider {
   login(): Promise<void>;
   logout(): Promise<void>;
   isAuthenticated(): boolean;
+  isAuthenticatedAsync(): Promise<boolean>;
 }
 ```
 
 - `getAccessToken()` — acquires a token silently from cache. If the cached token is expired, refreshes it automatically. If no cached token exists, triggers an interactive login (popup).
 - `login()` — explicitly triggers the Microsoft login popup. Call this in response to a user gesture (button click) to avoid popup blockers.
 - `logout()` — clears the MSAL cache and signs out.
-- `isAuthenticated()` — returns `true` if a cached token or account exists.
+- `isAuthenticated()` — synchronous check. Returns `true` if MSAL is already initialized and a cached account exists. Returns `false` if MSAL hasn't loaded yet — use `isAuthenticatedAsync()` instead for reliable checks on app startup.
+- `isAuthenticatedAsync()` — ensures MSAL is initialized before checking for cached accounts. Use this on app startup to detect returning users with valid sessions without showing a login screen.
 
 ### Bring your own token
 
@@ -59,7 +61,7 @@ const db = await connect({
 });
 ```
 
-Only `getAccessToken()` is required for `connect()`. The `login()`, `logout()`, and `isAuthenticated()` methods are only needed if the consuming app wants to manage the auth UI.
+Only `getAccessToken()` is required for `connect()`. The `login()`, `logout()`, `isAuthenticated()`, and `isAuthenticatedAsync()` methods are only needed if the consuming app wants to manage the auth UI.
 
 ---
 
@@ -87,15 +89,17 @@ const db = await connect({
 | `schema` | `SchemaDefinition` | Yes | — | Schema definition (see [Schema Spec](./schema-spec.md)) |
 | `folderPath` | `string` | No | `/` (root) | OneDrive folder path where the file lives |
 | `appName` | `string` | No | — | App name stored in `_exceldb_meta` |
+| `migrations` | `Migration[]` | No | — | Migrations to apply before schema validation (see [Schema Spec — Migrations](./schema-spec.md#migrations)) |
 
 ### Behavior
 
 1. Calls `auth.getAccessToken()` to obtain a Bearer token
 2. Searches OneDrive for the file at `{folderPath}/{fileName}`
 3. If the file doesn't exist, creates a new `.xlsx` with sheets matching the schema (header rows, `_exceldb_meta`)
-4. Downloads the file and parses it in memory
-5. Validates the live workbook structure against the declared schema (see [Schema Spec — Validation](./schema-spec.md#schema-validation-at-connect-time))
-6. Returns an `ExcelDBInstance`
+4. If the file exists, downloads it and parses it in memory
+5. If `migrations` are provided and the file exists, applies pending migrations (version > current) before validation
+6. Validates the live workbook structure against the declared schema (see [Schema Spec — Validation](./schema-spec.md#schema-validation-at-connect-time))
+7. Returns an `ExcelDBInstance`
 
 ### Errors
 

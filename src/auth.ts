@@ -93,5 +93,10 @@ export function createAuth(options: CreateAuthOptions): AuthProvider {
       if (!msalInstance) return false;
       return msalInstance.getAllAccounts().length > 0;
     },
+
+    async isAuthenticatedAsync(): Promise<boolean> {
+      const pca = await getMsal();
+      return pca.getAllAccounts().length > 0;
+    },
   };
 }
