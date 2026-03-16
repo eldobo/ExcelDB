@@ -66,13 +66,14 @@ Key boundary: **`graph-client.ts` and everything below it are the only modules t
 ### Connect
 
 ```
-ExcelDB.connect({ auth, fileName, schema })
+ExcelDB.connect({ auth, fileName, schema, migrations? })
   │
   ├─ auth.getAccessToken()          → Bearer token
   ├─ file-ops.findFile(fileName)    → GET /me/drive/root:/{path}/{name}
   │   └─ (if 404) file-ops.createFile()  → PUT with initial .xlsx bytes
   ├─ file-ops.downloadFile(itemId)  → GET /me/drive/items/{id}/content → bytes + eTag
   ├─ workbook.parse(bytes)          → in-memory WorkbookHandle
+  ├─ (if migrations) schema.applyMigrations(workbook, migrations) → upload if changed
   ├─ schema.validate(workbook, schema) → check sheets, columns, version
   │
   └─ return ExcelDBInstance { table(), batch(), migrate(), disconnect() }

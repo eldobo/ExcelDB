@@ -179,6 +179,61 @@ describe('full round-trip', () => {
     db.disconnect();
   });
 
+  it('applies migrations at connect before schema validation', async () => {
+    // First: create file with v1 schema
+    const db1 = await connect({
+      auth: mockAuth,
+      fileName: 'journal.xlsx',
+      schema,
+    });
+    const tasks1 = db1.table('tasks');
+    await tasks1.append({ id: 't1', title: 'Existing', done: false });
+    db1.disconnect();
+
+    // Now define v2 schema with a new column
+    const schemaV2 = {
+      version: 2,
+      tables: {
+        tasks: {
+          columns: {
+            id: { type: 'string', key: true, required: true },
+            title: { type: 'string', required: true },
+            done: { type: 'boolean' },
+            priority: { type: 'number' },
+          },
+        },
+      },
+    } as const satisfies SchemaDefinition;
+
+    // Without migrations, connecting with v2 schema would fail (missing 'priority' column).
+    // With migrations, the column is added before validation.
+    const db2 = await connect({
+      auth: mockAuth,
+      fileName: 'journal.xlsx',
+      schema: schemaV2,
+      migrations: [
+        {
+          version: 2,
+          description: 'Add priority column',
+          up: (wb) => { wb.addColumn('tasks', 'priority'); },
+        },
+      ],
+    });
+
+    const tasks2 = db2.table('tasks');
+    const all = await tasks2.getAll();
+    expect(all).toHaveLength(1);
+    expect(all[0].id).toBe('t1');
+    expect(all[0].priority).toBeNull(); // new column, existing row has no value
+
+    // Can write with the new column
+    await tasks2.append({ id: 't2', title: 'New', done: false, priority: 1 });
+    const t2 = await tasks2.get('t2');
+    expect(t2!.priority).toBe(1);
+
+    db2.disconnect();
+  });
+
   it('batch writes produce a single upload', async () => {
     const db = await connect({
       auth: mockAuth,

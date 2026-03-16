@@ -168,7 +168,7 @@ When `connect()` is called, ExcelDB validates the live workbook against the decl
 
 6. **Column order:** Not checked. ExcelDB maps by header name, not by position. Users can reorder columns freely in Excel.
 
-7. **Schema version:** The `_exceldb_meta` sheet's `schema_version` must be `<=` the declared schema's `version`. If less, the app should call `db.migrate()` before operating on data.
+7. **Schema version:** The `_exceldb_meta` sheet's `schema_version` must be `<=` the declared schema's `version`. If less, the app should provide migrations via `connect({ migrations })` (preferred — runs before validation) or call `db.migrate()` after connecting.
 
 ### First-run behavior
 
