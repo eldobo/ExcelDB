@@ -56,7 +56,7 @@ index.ts ──→ auth.ts (AuthProvider interface)
 
 errors.ts ← used by all modules
 types.ts  ← used by all modules
-coerce.ts ← used by table.ts, schema.ts
+coerce.ts ← used by table.ts
 ```
 
 Key boundary: **`graph-client.ts` and everything below it are the only modules that make network calls.** Everything above operates on in-memory data structures.
@@ -171,7 +171,11 @@ ExcelDB core never imports MSAL. It depends on an `AuthProvider` interface:
 
 ```typescript
 interface AuthProvider {
-  getAccessToken(): Promise<string>;
+  getAccessToken(): Promise<string>;       // Required — used by connect() for all Graph API calls
+  login?(): Promise<void>;                 // Optional — trigger interactive login
+  logout?(): Promise<void>;                // Optional — clear auth state
+  isAuthenticated?(): boolean;             // Optional — sync check (unreliable before MSAL init)
+  isAuthenticatedAsync?(): Promise<boolean>; // Optional — async check (reliable for SSO)
 }
 ```
 

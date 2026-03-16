@@ -110,6 +110,6 @@ The redirect URI is configured as "Web" instead of "Single-page application" in 
 ## Security notes
 
 - The client ID is public — it's embedded in your app's JavaScript. This is by design for SPA/public clients.
-- The access token is stored in browser `sessionStorage` (cleared when the tab closes). Use `localStorage` for persistence across sessions (configurable in MSAL).
+- The access token is stored in browser `localStorage` (persists across sessions). This is required for silent SSO — returning users are signed in automatically without a login popup.
 - The token only grants access to the scopes the user consented to (`Files.ReadWrite`). It cannot access email, calendar, contacts, or other data.
 - Users can revoke access at any time via [Microsoft account security settings](https://account.microsoft.com/privacy/app-access).

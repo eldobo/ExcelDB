@@ -46,7 +46,7 @@ These are **delegated** permissions — the app acts on behalf of the signed-in 
 - MSAL.js caches tokens and automatically refreshes them using the refresh token
 - `getAccessToken()` returns a valid token (refreshing silently if needed)
 - If the refresh token is also expired (e.g., after weeks of inactivity), an interactive login is required
-- Graph API returns `401 Unauthorized` if the token is invalid → ExcelDB retries once after re-acquiring a token, then throws `ExcelDBAuthError`
+- Graph API returns `401 Unauthorized` if the token is invalid → ExcelDB throws `ExcelDBAuthError` (no automatic retry — the consuming app should re-authenticate and retry)
 
 ## Endpoints used
 
@@ -131,7 +131,7 @@ Returns the DriveItem metadata. Used to refresh the eTag without downloading the
 | `200` | Success | Process response |
 | `201` | Created | Process response (file creation) |
 | `302` | Redirect | Follow redirect (file download) |
-| `401` | Unauthorized | Re-acquire token, retry once. If still 401 → `ExcelDBAuthError` |
+| `401` | Unauthorized | `ExcelDBAuthError` (no automatic retry) |
 | `404` | Not found | `ExcelDBNotFoundError` (or create file, depending on context) |
 | `409` | Conflict | `ExcelDBConflictError` |
 | `412` | Precondition failed | `ExcelDBConflictError` (eTag mismatch) |

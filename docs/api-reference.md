@@ -29,10 +29,10 @@ const auth = createAuth({
 ```typescript
 interface AuthProvider {
   getAccessToken(): Promise<string>;
-  login(): Promise<void>;
-  logout(): Promise<void>;
-  isAuthenticated(): boolean;
-  isAuthenticatedAsync(): Promise<boolean>;
+  login?(): Promise<void>;
+  logout?(): Promise<void>;
+  isAuthenticated?(): boolean;
+  isAuthenticatedAsync?(): Promise<boolean>;
 }
 ```
 
@@ -178,7 +178,7 @@ Matching rules:
 - String comparison is case-sensitive
 - Number comparison is strict equality
 - Boolean comparison after coercion
-- Date comparison by ISO string equality (day-level precision: `toISOString().slice(0, 10)`)
+- Date comparison by strict JavaScript equality (`!==`). Two `Date` objects must be the same reference to match. For reliable date filtering, query by a non-date field or filter results in your app code.
 - `null` filter value matches empty cells
 
 Soft-deleted rows are excluded. Returns: `T[]`.
@@ -241,7 +241,7 @@ await symptoms.upsert({
 });
 ```
 
-Requires a key column. Throws `ExcelDBError` if no key column is defined.
+Requires a key column. If no key column is defined, falls through to `append()` (no error is thrown).
 
 Behavior:
 - Finds existing row by key value
@@ -321,7 +321,7 @@ await db.batch(async (tx) => {
 
 ### Behavior
 
-1. Downloads fresh copy of the file (if not already cached)
+1. Snapshots the current in-memory workbook (does not re-download from OneDrive)
 2. Creates a `Transaction` — all operations within the callback modify the in-memory workbook but do NOT upload
 3. On callback completion: serializes the workbook and uploads with eTag check
 4. On callback error: discards all in-memory changes (rollback)
@@ -370,13 +370,11 @@ Use this after catching `ExcelDBConflictError` to get the latest version of the 
 
 ## `db.disconnect()`
 
-Cleans up the in-memory workbook and any cached state. Does not affect the file in OneDrive.
+Releases the connection. Currently a no-op — the in-memory workbook is garbage-collected when the `ExcelDBInstance` goes out of scope. Does not affect the file in OneDrive.
 
 ```typescript
 db.disconnect();
 ```
-
-After calling `disconnect()`, all table operations will throw. Call `connect()` again to re-establish the connection.
 
 ---
 

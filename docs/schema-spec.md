@@ -71,7 +71,7 @@ interface SchemaDefinition {
 
 ### `number`
 
-- **Cell → JS:** `parseFloat(value)`. If `NaN` → `null` (or `default`). Empty cell → `null`.
+- **Cell → JS:** `parseFloat(value)`. If `NaN` → `null`. Empty cell → `null` (or `default` if specified).
 - **JS → Cell:** Number value written directly. Excel renders it as a number. `null` → empty cell.
 
 ### `boolean`
@@ -79,8 +79,8 @@ interface SchemaDefinition {
 - **Cell → JS:** Truthy mapping:
   - `true`, `"true"`, `"TRUE"`, `"yes"`, `"YES"`, `"1"`, `1` → `true`
   - `false`, `"false"`, `"FALSE"`, `"no"`, `"NO"`, `"0"`, `0` → `false`
-  - Empty cell → `null` (or `default`)
-  - Any other value → `null` (with a warning in development mode)
+  - Empty cell → `null` (or `default` if specified)
+  - Any other value → `null`
 - **JS → Cell:** `true` → `TRUE`, `false` → `FALSE`. `null` → empty cell.
 
 ### `date`
@@ -89,7 +89,7 @@ interface SchemaDefinition {
   1. **Excel serial number** (e.g., `45001`): Converted to JS `Date` using the 1900 date system with the Lotus 1-2-3 leap year bug correction
   2. **ISO 8601 string** (e.g., `"2026-03-15"` or `"2026-03-15T10:30:00Z"`): Parsed with `new Date(value)`
   3. **JS Date object** (from SheetJS with `cellDates: true`): Passthrough
-  - Empty cell → `null` (or `default`)
+  - Empty cell → `null` (or `default` if specified)
   - Invalid date → `null`
 - **JS → Cell:** `Date` object → ISO 8601 string (`toISOString()`). Stored as a string in the cell so the value is human-readable in Excel. `null` → empty cell.
 
@@ -130,7 +130,7 @@ Extra columns are:
 - **Never deleted** by ExcelDB — they are preserved through all read/write cycles
 - **Never validated** — any value is accepted
 - **Always returned as strings** — no type coercion (ExcelDB doesn't know the intended type)
-- **Writable** — if you include `_extra: { doctor_notes: 'new value' }` in an `update()`, the value is written
+- **Read-only** — `_extra` values are returned on read but cannot be written via `update()` or `upsert()`. To modify extra columns, edit the file directly in Excel.
 
 ## `_exceldb_meta` sheet
 
@@ -239,5 +239,5 @@ The `WorkbookHandle` passed to `up()` supports:
 - `removeColumn(sheet, name)` — remove a column and all its data
 - `renameColumn(sheet, oldName, newName)` — rename a column header
 - `addSheet(name, headers)` — add a new sheet with the given header row
-- `removeSheet(name)` — remove an entire sheet
+- `deleteSheet(name)` — remove an entire sheet
 - `renameSheet(oldName, newName)` — rename a sheet tab
